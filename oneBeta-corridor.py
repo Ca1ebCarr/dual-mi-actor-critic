@@ -718,13 +718,8 @@ if __name__ == "__main__":
     steps_std = np.array([r["std_steps"] for r in runs])
     sr = np.array([r["success_rate"] for r in runs])
 
-    goal_xs = sorted({int(k) for r in runs for k in r["goal_fractions"]})
-    goal_frac = {
-        gx: np.array([r["goal_fractions"].get(str(gx), 0.0) for r in runs])
-        for gx in goal_xs
-    }
-    goal_colors = {1: "#e74c3c", 3: "#f39c12", 5: "#27ae60"}
-    goal_labels = {1: "R=1  (x=1)", 3: "R=2  (x=3)", 5: "R=3  (x=5)"}
+    GOAL_KEYS = [f"{gx}_{gy}" for (gx, gy) in GOAL_POSITIONS]
+
 
     sort_idx = np.argsort(betas)
     bs = betas[sort_idx]
@@ -735,7 +730,6 @@ if __name__ == "__main__":
     stepss = steps[sort_idx]
     steps_stds = steps_std[sort_idx]
     srs = sr[sort_idx]
-    gf_s = {gx: goal_frac[gx][sort_idx] for gx in goal_xs}
 
     LINTHRESH = 0.001
     POINT_COLOR = "#2563eb"
@@ -837,6 +831,19 @@ if __name__ == "__main__":
     print("Saved onebeta_fig2_mi_quantities.png")
 
     # Figure 3 – Goal distribution vs Beta
+    GOAL_KEY_META = {
+        "1_1": {"color": "#e74c3c", "label": "R=1 (1,1)"},
+        "9_1": {"color": "#f39c12", "label": "R=2 (9,1)"},
+        "1_7": {"color": "#3498db", "label": "R=4 (1,7)"},
+        "9_7": {"color": "#27ae60", "label": "R=6 (9,7)"},
+    }
+    goal_keys_plot = list(GOAL_KEY_META.keys())
+    goal_frac = {
+        gk: np.array([r["goal_fractions"].get(gk, 0.0) for r in runs])
+        for gk in goal_keys_plot
+    }
+    gf_s = {gk: goal_frac[gk][sort_idx] for gk in goal_keys_plot}
+
     fig, ax = plt.subplots(figsize=(10, 6))
     fig.suptitle(
         "S→A: Goal Visit Rate vs Beta",
@@ -844,18 +851,19 @@ if __name__ == "__main__":
         fontweight="bold",
     )
 
-    for gx in goal_xs:
+    for gk in goal_keys_plot:
+        meta = GOAL_KEY_META[gk]
         ax.plot(
             bs,
-            gf_s[gx] * 100,
+            gf_s[gk] * 100,
             "-o",
-            color=goal_colors.get(gx, "gray"),
+            color=meta["color"],
             linewidth=2,
             markersize=7,
-            label=goal_labels.get(gx, f"x={gx}"),
+            label=meta["label"],
         )
         ax.fill_between(
-            bs, 0, gf_s[gx] * 100, alpha=0.08, color=goal_colors.get(gx, "gray")
+            bs, 0, gf_s[gk] * 100, alpha=0.08, color=meta["color"]
         )
 
     ax.set_xlabel("Beta")
